@@ -9,10 +9,9 @@
     :root{
       --bg: #0b0b0f;
       --panel: rgba(255,255,255,0.06);
-      --panel2: rgba(255,255,255,0.045);
       --text: rgba(255,255,255,0.95);
-      --muted: rgba(255,255,255,0.60);
-      --muted2: rgba(255,255,255,0.35);
+      --muted: rgba(255,255,255,0.62);
+      --muted2: rgba(255,255,255,0.38);
 
       --ok: rgba(0, 255, 170, 0.16);
       --warn: rgba(255, 200, 0, 0.16);
@@ -30,9 +29,10 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background: radial-gradient(1200px 800px at 20% 10%, rgba(80,120,255,0.20), transparent 55%),
-                  radial-gradient(900px 600px at 80% 20%, rgba(0,255,170,0.14), transparent 60%),
-                  var(--bg);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(80,120,255,0.20), transparent 55%),
+        radial-gradient(900px 600px at 80% 20%, rgba(0,255,170,0.14), transparent 60%),
+        var(--bg);
       color: var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       letter-spacing: -0.02em;
@@ -86,7 +86,7 @@
       overflow: hidden;
     }
 
-    /* subtle motion to reduce burn-in */
+    /* subtle drift to reduce burn-in */
     .card::before{
       content:"";
       position:absolute;
@@ -101,7 +101,6 @@
       50%{ transform: translate(2%, 1%); }
       100%{ transform: translate(-2%, -1%); }
     }
-
     .card > *{ position: relative; }
 
     .hero {
@@ -116,12 +115,17 @@
     .big {
       font-size: 68px;
       line-height: 1.05;
-      font-weight: 780;
+      font-weight: 800;
       margin: 0;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
     }
+    .big .muter { opacity: .92; }
+    .big .emoji { margin-right: 12px; }
+
     .sub {
-      margin-top: 10px;
-      font-size: 20px;
+      margin-top: 12px;
+      font-size: 18px;
       color: var(--muted);
       display:flex;
       align-items:center;
@@ -142,12 +146,13 @@
       white-space: nowrap;
       user-select: none;
     }
-    .chip strong { font-weight: 750; color: rgba(255,255,255,0.92); }
+    .chip strong { font-weight: 780; color: rgba(255,255,255,0.92); }
 
     .badge {
       align-self: flex-start;
-      font-size: 14px;
+      font-size: 13px;
       color: var(--muted);
+      opacity: 0.85;
       background: rgba(255,255,255,0.07);
       border: 1px solid rgba(255,255,255,0.12);
       padding: 10px 14px;
@@ -177,6 +182,11 @@
       background: rgba(255,255,255,0.04);
     }
 
+    .row.primary {
+      background: rgba(255,255,255,0.055);
+      border-color: rgba(255,255,255,0.14);
+    }
+
     .row .left{
       display:flex;
       align-items:center;
@@ -204,7 +214,7 @@
     }
     .value {
       font-size: 30px;
-      font-weight: 740;
+      font-weight: 760;
       white-space: nowrap;
     }
     .value small{
@@ -277,7 +287,7 @@
       </div>
 
       <div class="grid">
-        <div class="row">
+        <div class="row primary">
           <div class="left">
             <div class="icon">⏰</div>
             <div class="label">Leave by</div>
@@ -307,8 +317,6 @@
     // ====== CONFIG ======
     const ENDPOINT = "https://script.google.com/macros/s/AKfycbwo7ghzuBVU6Yd1EdVWmpY2d0O3Fjy0_bOUAU3UUBNSUFEsxkfFCYXvbzMrbt_Kn-_CPQ/exec";
     const REFRESH_MS = 15000;
-
-    // How long until we consider the backend "stale" (helps spot cache/deploy issues)
     const STALE_MS = 2 * 60 * 1000; // 2 minutes
     // ====================
 
@@ -362,6 +370,7 @@
       el("updated").innerText = `Updated ${new Date().toLocaleTimeString()}`;
 
       el("countdownChip").style.display = "none";
+      el("meta").innerText = "";
     }
 
     function clearError(){
@@ -381,14 +390,19 @@
       const minsDepart = d.minsToDepart;
       const minsLeave = d.minsToLeave;
 
-      // Headline + subline (no Today/Tomorrow)
-      el("headline").innerHTML = `🚌 ${d.route} <span style="opacity:.92">departs</span> ${d.departsAt} <span style="opacity:.75">(${formatMins(minsDepart)})</span>`;
+      // Headline (no redundant countdown here)
+      el("headline").innerHTML = `🚌 ${d.route} <span class="muter">departs</span> ${d.departsAt}`;
       el("subline").innerText = "Next scheduled departure";
 
-      // Countdown chip
+      // Action chip (switches to "Leave in" when close)
       if (typeof minsDepart === "number"){
         el("countdownChip").style.display = "inline-flex";
-        el("countdownText").innerText = formatMins(minsDepart);
+
+        if (typeof minsLeave === "number" && minsLeave <= 10){
+          el("countdownChip").innerHTML = `🚶 Leave in <strong>${formatMins(Math.max(0, minsLeave))}</strong>`;
+        } else {
+          el("countdownChip").innerHTML = `⏳ Departs in <strong>${formatMins(minsDepart)}</strong>`;
+        }
       } else {
         el("countdownChip").style.display = "none";
       }
@@ -397,16 +411,14 @@
       el("leaveBy").innerHTML = `${d.leaveBy} <small>(${formatMins(minsLeave)})</small>`;
       el("arriveBy").innerText = `${d.arriveBy}`;
 
-      // Updated time + staleness indicator
+      // Updated + staleness
       const updated = d.updatedAt ? new Date(d.updatedAt) : new Date();
       const now = new Date();
       const age = now.getTime() - updated.getTime();
 
-      let updatedText = `Updated ${updated.toLocaleTimeString()}`;
-      if (age > STALE_MS) updatedText += " • stale";
-      el("updated").innerText = updatedText;
+      el("updated").innerText = `Updated ${updated.toLocaleTimeString()}${age > STALE_MS ? " • stale" : ""}`;
 
-      // Footer meta
+      // Footer meta (optional: show origin/destination if backend provides later)
       el("meta").innerText = "";
 
       setThemeByLeaveMins(minsLeave);
