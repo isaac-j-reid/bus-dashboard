@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui;
+      margin: 0;
+      padding: 28px;
+      background: #111;
+      color: #fff;
+    }
+    .big { font-size: 64px; font-weight: 700; }
+    .mid { font-size: 34px; margin-top: 18px; }
+    .small { font-size: 20px; margin-top: 14px; opacity: 0.7; }
+    .danger { background: #7a0000; }
+  </style>
+</head>
+
+<body id="b">
+  <div class="big" id="next">Loading…</div>
+  <div class="mid" id="leave"></div>
+  <div class="mid" id="arrive"></div>
+  <div class="small" id="meta"></div>
+
+  <script>
+    const ENDPOINT = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL";
+
+    async function load() {
+      const res = await fetch(ENDPOINT, { cache: "no-store" });
+      const d = await res.json();
+
+      if (!d.ok) {
+        document.getElementById("next").innerText = "No trip found";
+        document.getElementById("leave").innerText = d.message || "";
+        document.getElementById("arrive").innerText = "";
+        return;
+      }
+
+      document.getElementById("next").innerText =
+        `🚌 410 departs ${d.departsAt} (${d.minsToDepart}m)`;
+
+      document.getElementById("leave").innerText =
+        `⏰ Leave by ${d.leaveBy} (${d.minsToLeave}m)`;
+
+      document.getElementById("arrive").innerText =
+        `✅ Arrive by ${d.arriveBy}`;
+
+      document.getElementById("meta").innerText =
+        `Updated ${new Date(d.updatedAt).toLocaleTimeString()}`;
+
+      document.getElementById("b").className =
+        (d.minsToLeave <= 0) ? "danger" : "";
+    }
+
+    load();
+    setInterval(load, 15000);
+  </script>
+</body>
+</html>
