@@ -1,72 +1,368 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bus Dashboard</title>
+
   <style>
-    body {
-      font-family: system-ui;
-      margin: 0;
-      padding: 28px;
-      background: #111;
-      color: #fff;
+    :root{
+      --bg: #0b0b0f;
+      --panel: rgba(255,255,255,0.06);
+      --text: rgba(255,255,255,0.95);
+      --muted: rgba(255,255,255,0.60);
+      --muted2: rgba(255,255,255,0.35);
+
+      --ok: rgba(0, 255, 170, 0.16);
+      --warn: rgba(255, 200, 0, 0.16);
+      --late: rgba(255, 50, 50, 0.18);
+
+      --okBorder: rgba(0, 255, 170, 0.35);
+      --warnBorder: rgba(255, 200, 0, 0.40);
+      --lateBorder: rgba(255, 50, 50, 0.45);
     }
-    .big { font-size: 64px; font-weight: 700; }
-    .mid { font-size: 34px; margin-top: 18px; }
-    .small { font-size: 20px; margin-top: 14px; opacity: 0.7; }
-    .danger { background: #7a0000; }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(80,120,255,0.20), transparent 55%),
+                  radial-gradient(900px 600px at 80% 20%, rgba(0,255,170,0.14), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      letter-spacing: -0.02em;
+      padding: 34px;
+    }
+
+    .wrap {
+      max-width: 1100px;
+    }
+
+    .title {
+      display:flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .title h1{
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .pill {
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.35);
+    }
+
+    .card {
+      border-radius: 22px;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 26px 26px 22px;
+      box-shadow: 0 20px 70px rgba(0,0,0,0.45);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .big {
+      font-size: 68px;
+      line-height: 1.05;
+      font-weight: 750;
+      margin: 0;
+    }
+    .big .emoji { margin-right: 12px; }
+    .sub {
+      margin-top: 10px;
+      font-size: 22px;
+      color: var(--muted);
+    }
+
+    .badge {
+      align-self: flex-start;
+      font-size: 16px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 10px 14px;
+      border-radius: 14px;
+      display:flex;
+      gap: 10px;
+      align-items:center;
+    }
+
+    .grid {
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .row {
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .row .left{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 22px;
+      flex: 0 0 auto;
+    }
+
+    .label {
+      font-size: 20px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .value {
+      font-size: 30px;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+    .value small{
+      font-size: 18px;
+      color: var(--muted);
+      font-weight: 650;
+      margin-left: 10px;
+    }
+
+    .footer {
+      margin-top: 16px;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted2);
+      font-size: 14px;
+    }
+
+    .error {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255, 50, 50, 0.12);
+      border: 1px solid rgba(255, 50, 50, 0.30);
+      color: rgba(255,255,255,0.9);
+      display:none;
+    }
+
+    /* status themes applied to .card */
+    .theme-ok    { background: linear-gradient(180deg, var(--ok), rgba(255,255,255,0.04)); border-color: var(--okBorder); }
+    .theme-warn  { background: linear-gradient(180deg, var(--warn), rgba(255,255,255,0.04)); border-color: var(--warnBorder); }
+    .theme-late  { background: linear-gradient(180deg, var(--late), rgba(255,255,255,0.04)); border-color: var(--lateBorder); }
+
+    @media (max-width: 700px){
+      body { padding: 20px; }
+      .big { font-size: 50px; }
+      .value { font-size: 26px; }
+      .label { font-size: 18px; }
+    }
   </style>
 </head>
 
-<body id="b">
-  <div class="big" id="next">Loading…</div>
-  <div class="mid" id="leave"></div>
-  <div class="mid" id="arrive"></div>
-  <div class="small" id="meta"></div>
+<body>
+  <div class="wrap">
+    <div class="title">
+      <h1>Bus Dashboard</h1>
+      <div class="pill"><span class="dot" id="dot"></span><span id="statusText">Loading…</span></div>
+    </div>
+
+    <div class="card" id="card">
+      <div class="hero">
+        <div>
+          <p class="big" id="headline">Loading…</p>
+          <div class="sub" id="subline">Fetching live TfNSW data…</div>
+        </div>
+        <div class="badge" id="badge">
+          <span>🕒</span>
+          <span id="updated">—</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="row">
+          <div class="left">
+            <div class="icon">⏰</div>
+            <div class="label">Leave by</div>
+          </div>
+          <div class="value" id="leaveBy">—</div>
+        </div>
+
+        <div class="row">
+          <div class="left">
+            <div class="icon">✅</div>
+            <div class="label">Arrive by</div>
+          </div>
+          <div class="value" id="arriveBy">—</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div id="meta"> </div>
+        <div>Auto-refresh: <span id="refresh">15s</span></div>
+      </div>
+
+      <div class="error" id="errorBox"></div>
+    </div>
+  </div>
 
   <script>
-    // IMPORTANT: paste your /exec URL here
+    // ====== CONFIG ======
     const ENDPOINT = "https://script.google.com/macros/s/AKfycbwo7ghzuBVU6Yd1EdVWmpY2d0O3Fjy0_bOUAU3UUBNSUFEsxkfFCYXvbzMrbt_Kn-_CPQ/exec";
     const REFRESH_MS = 15000;
+    // ====================
 
-    function render(d) {
-      if (!d || !d.ok) {
-        document.getElementById("next").innerText = "No trip found";
-        document.getElementById("leave").innerText = (d && d.message) ? d.message : "";
-        document.getElementById("arrive").innerText = "";
-        document.getElementById("meta").innerText = "";
-        document.getElementById("b").className = "";
+    document.getElementById("refresh").innerText = Math.round(REFRESH_MS/1000) + "s";
+
+    const el = (id) => document.getElementById(id);
+
+    function parseTimeLabelToDate(timeLabel){
+      // timeLabel like "7:46 AM" - create a date today in local tz
+      // We only use this to check "Tomorrow" label via minsToDepart instead (more reliable).
+      return null;
+    }
+
+    function formatMins(mins){
+      if (typeof mins !== "number") return "";
+      if (mins <= 0) return "NOW";
+      if (mins < 60) return `${mins}m`;
+      const h = Math.floor(mins/60);
+      const m = mins % 60;
+      return m === 0 ? `${h}h` : `${h}h ${m}m`;
+    }
+
+    function setThemeByLeaveMins(minsToLeave){
+      const card = el("card");
+      card.classList.remove("theme-ok", "theme-warn", "theme-late");
+
+      const dot = el("dot");
+      dot.style.background = "rgba(255,255,255,0.35)";
+
+      if (typeof minsToLeave !== "number") return;
+
+      if (minsToLeave <= 0){
+        card.classList.add("theme-late");
+        dot.style.background = "rgba(255, 50, 50, 0.9)";
+        el("statusText").innerText = "Leave now";
+      } else if (minsToLeave <= 10){
+        card.classList.add("theme-warn");
+        dot.style.background = "rgba(255, 200, 0, 0.95)";
+        el("statusText").innerText = "Leaving soon";
+      } else {
+        card.classList.add("theme-ok");
+        dot.style.background = "rgba(0, 255, 170, 0.95)";
+        el("statusText").innerText = "On track";
+      }
+    }
+
+    function showError(msg){
+      const box = el("errorBox");
+      box.style.display = "block";
+      box.innerText = msg;
+      el("statusText").innerText = "Error";
+      el("dot").style.background = "rgba(255, 50, 50, 0.9)";
+    }
+
+    function clearError(){
+      const box = el("errorBox");
+      box.style.display = "none";
+      box.innerText = "";
+    }
+
+    function render(d){
+      if (!d || !d.ok){
+        showError(d?.message || "No trip found.");
+        el("headline").innerText = "No trip found";
+        el("subline").innerText = d?.message || "Try again in a moment.";
+        el("leaveBy").innerText = "—";
+        el("arriveBy").innerText = "—";
+        el("updated").innerText = new Date().toLocaleTimeString();
         return;
       }
 
-      document.getElementById("next").innerText =
-        `🚌 ${d.route} departs ${d.departsAt} (${d.minsToDepart}m)`;
+      clearError();
 
-      document.getElementById("leave").innerText =
-        `⏰ Leave by ${d.leaveBy} (${d.minsToLeave}m)`;
+      const minsDepart = d.minsToDepart;
+      const minsLeave = d.minsToLeave;
 
-      document.getElementById("arrive").innerText =
-        `✅ Arrive by ${d.arriveBy}`;
+      // Determine if this is likely "tomorrow" or later:
+      // If the next bus is > 6 hours away, label it as "Tomorrow / Later"
+      // (simple + reliable without extra date fields)
+      let dayLabel = "";
+      if (typeof minsDepart === "number" && minsDepart >= 360) dayLabel = " • Tomorrow";
 
-      document.getElementById("meta").innerText =
-        `Updated ${new Date(d.updatedAt).toLocaleTimeString()} • ${d.note || ""}`;
+      el("headline").innerHTML = `🚌 ${d.route} <span style="opacity:.92">departs</span> ${d.departsAt} <span style="opacity:.75">(${formatMins(minsDepart)})</span>`;
+      el("subline").innerText = `Next departure from your stop${dayLabel}`;
 
-      // Red background when you should be leaving
-      document.getElementById("b").className =
-        (typeof d.minsToLeave === "number" && d.minsToLeave <= 0) ? "danger" : "";
+      el("leaveBy").innerHTML = `${d.leaveBy} <small>(${formatMins(minsLeave)})</small>`;
+      el("arriveBy").innerText = `${d.arriveBy}`;
+
+      // Updated time
+      const updatedTime = d.updatedAt ? new Date(d.updatedAt).toLocaleTimeString() : new Date().toLocaleTimeString();
+      el("updated").innerText = `Updated ${updatedTime}`;
+
+      // Extra meta (optional)
+      el("meta").innerText = "";
+
+      setThemeByLeaveMins(minsLeave);
     }
 
     // JSONP callback
-    window.__busDashCallback = function(data) {
+    window.__busDashCallback = function(data){
       render(data);
     };
 
-    function load() {
+    function load(){
       const url = `${ENDPOINT}?callback=__busDashCallback&_=${Date.now()}`;
       const s = document.createElement("script");
       s.src = url;
-      s.onerror = () => render({ ok: false, message: "Error loading backend (check URL / deployment access)" });
+      s.async = true;
+      s.onerror = () => render({ ok:false, message:"Could not reach backend (check Web App access & URL)" });
       document.body.appendChild(s);
-      setTimeout(() => s.remove(), 5000);
+      setTimeout(() => s.remove(), 4000);
     }
 
     load();
