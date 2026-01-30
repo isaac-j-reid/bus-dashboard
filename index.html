@@ -9,6 +9,7 @@
     :root{
       --bg: #0b0b0f;
       --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.045);
       --text: rgba(255,255,255,0.95);
       --muted: rgba(255,255,255,0.60);
       --muted2: rgba(255,255,255,0.35);
@@ -20,6 +21,9 @@
       --okBorder: rgba(0, 255, 170, 0.35);
       --warnBorder: rgba(255, 200, 0, 0.40);
       --lateBorder: rgba(255, 50, 50, 0.45);
+
+      --shadow: 0 20px 70px rgba(0,0,0,0.45);
+      --radius: 22px;
     }
 
     * { box-sizing: border-box; }
@@ -35,9 +39,7 @@
       padding: 34px;
     }
 
-    .wrap {
-      max-width: 1100px;
-    }
+    .wrap { max-width: 1100px; }
 
     .title {
       display:flex;
@@ -49,9 +51,10 @@
     .title h1{
       margin: 0;
       font-size: 20px;
-      font-weight: 600;
+      font-weight: 650;
       color: var(--muted);
     }
+
     .pill {
       display:inline-flex;
       align-items:center;
@@ -62,6 +65,8 @@
       border: 1px solid rgba(255,255,255,0.12);
       color: var(--muted);
       font-size: 14px;
+      user-select: none;
+      white-space: nowrap;
     }
     .dot{
       width: 8px;
@@ -71,13 +76,33 @@
     }
 
     .card {
-      border-radius: 22px;
+      border-radius: var(--radius);
       background: var(--panel);
       border: 1px solid rgba(255,255,255,0.12);
       padding: 26px 26px 22px;
-      box-shadow: 0 20px 70px rgba(0,0,0,0.45);
+      box-shadow: var(--shadow);
       backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
     }
+
+    /* subtle motion to reduce burn-in */
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), transparent 50%);
+      transform: translate3d(0,0,0);
+      animation: drift 22s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes drift{
+      0%{ transform: translate(-2%, -1%); }
+      50%{ transform: translate(2%, 1%); }
+      100%{ transform: translate(-2%, -1%); }
+    }
+
+    .card > *{ position: relative; }
 
     .hero {
       display:flex;
@@ -91,19 +116,37 @@
     .big {
       font-size: 68px;
       line-height: 1.05;
-      font-weight: 750;
+      font-weight: 780;
       margin: 0;
     }
-    .big .emoji { margin-right: 12px; }
     .sub {
       margin-top: 10px;
-      font-size: 22px;
+      font-size: 20px;
       color: var(--muted);
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
+
+    .chip {
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: rgba(255,255,255,0.80);
+      font-size: 14px;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .chip strong { font-weight: 750; color: rgba(255,255,255,0.92); }
 
     .badge {
       align-self: flex-start;
-      font-size: 16px;
+      font-size: 14px;
       color: var(--muted);
       background: rgba(255,255,255,0.07);
       border: 1px solid rgba(255,255,255,0.12);
@@ -112,6 +155,8 @@
       display:flex;
       gap: 10px;
       align-items:center;
+      user-select: none;
+      white-space: nowrap;
     }
 
     .grid {
@@ -153,13 +198,13 @@
     }
 
     .label {
-      font-size: 20px;
+      font-size: 18px;
       color: var(--muted);
       white-space: nowrap;
     }
     .value {
       font-size: 30px;
-      font-weight: 720;
+      font-weight: 740;
       white-space: nowrap;
     }
     .value small{
@@ -187,6 +232,7 @@
       border: 1px solid rgba(255, 50, 50, 0.30);
       color: rgba(255,255,255,0.9);
       display:none;
+      line-height: 1.35;
     }
 
     /* status themes applied to .card */
@@ -198,7 +244,7 @@
       body { padding: 20px; }
       .big { font-size: 50px; }
       .value { font-size: 26px; }
-      .label { font-size: 18px; }
+      .label { font-size: 16px; }
     }
   </style>
 </head>
@@ -207,15 +253,23 @@
   <div class="wrap">
     <div class="title">
       <h1>Bus Dashboard</h1>
-      <div class="pill"><span class="dot" id="dot"></span><span id="statusText">Loading…</span></div>
+      <div class="pill">
+        <span class="dot" id="dot"></span>
+        <span id="statusText">Loading…</span>
+      </div>
     </div>
 
     <div class="card" id="card">
       <div class="hero">
         <div>
           <p class="big" id="headline">Loading…</p>
-          <div class="sub" id="subline">Fetching live TfNSW data…</div>
+
+          <div class="sub">
+            <span id="subline">Fetching live TfNSW data…</span>
+            <span class="chip" id="countdownChip" style="display:none;">⏳ Departs in <strong id="countdownText">—</strong></span>
+          </div>
         </div>
+
         <div class="badge" id="badge">
           <span>🕒</span>
           <span id="updated">—</span>
@@ -241,7 +295,7 @@
       </div>
 
       <div class="footer">
-        <div id="meta"> </div>
+        <div id="meta"></div>
         <div>Auto-refresh: <span id="refresh">15s</span></div>
       </div>
 
@@ -253,17 +307,13 @@
     // ====== CONFIG ======
     const ENDPOINT = "https://script.google.com/macros/s/AKfycbwo7ghzuBVU6Yd1EdVWmpY2d0O3Fjy0_bOUAU3UUBNSUFEsxkfFCYXvbzMrbt_Kn-_CPQ/exec";
     const REFRESH_MS = 15000;
+
+    // How long until we consider the backend "stale" (helps spot cache/deploy issues)
+    const STALE_MS = 2 * 60 * 1000; // 2 minutes
     // ====================
 
     document.getElementById("refresh").innerText = Math.round(REFRESH_MS/1000) + "s";
-
     const el = (id) => document.getElementById(id);
-
-    function parseTimeLabelToDate(timeLabel){
-      // timeLabel like "7:46 AM" - create a date today in local tz
-      // We only use this to check "Tomorrow" label via minsToDepart instead (more reliable).
-      return null;
-    }
 
     function formatMins(mins){
       if (typeof mins !== "number") return "";
@@ -301,9 +351,17 @@
     function showError(msg){
       const box = el("errorBox");
       box.style.display = "block";
-      box.innerText = msg;
+      box.innerText = msg + "\n\n(Will retry automatically.)";
       el("statusText").innerText = "Error";
       el("dot").style.background = "rgba(255, 50, 50, 0.9)";
+
+      el("headline").innerText = "No trip found";
+      el("subline").innerText = "Trying again…";
+      el("leaveBy").innerText = "—";
+      el("arriveBy").innerText = "—";
+      el("updated").innerText = `Updated ${new Date().toLocaleTimeString()}`;
+
+      el("countdownChip").style.display = "none";
     }
 
     function clearError(){
@@ -315,11 +373,6 @@
     function render(d){
       if (!d || !d.ok){
         showError(d?.message || "No trip found.");
-        el("headline").innerText = "No trip found";
-        el("subline").innerText = d?.message || "Try again in a moment.";
-        el("leaveBy").innerText = "—";
-        el("arriveBy").innerText = "—";
-        el("updated").innerText = new Date().toLocaleTimeString();
         return;
       }
 
@@ -328,23 +381,32 @@
       const minsDepart = d.minsToDepart;
       const minsLeave = d.minsToLeave;
 
-      // Determine if this is likely "tomorrow" or later:
-      // If the next bus is > 6 hours away, label it as "Tomorrow / Later"
-      // (simple + reliable without extra date fields)
-      let dayLabel = "";
-      if (typeof minsDepart === "number" && minsDepart >= 360) dayLabel = " • Tomorrow";
-
+      // Headline + subline (no Today/Tomorrow)
       el("headline").innerHTML = `🚌 ${d.route} <span style="opacity:.92">departs</span> ${d.departsAt} <span style="opacity:.75">(${formatMins(minsDepart)})</span>`;
-      el("subline").innerText = `Next departure from your stop${dayLabel}`;
+      el("subline").innerText = "Next scheduled departure";
 
+      // Countdown chip
+      if (typeof minsDepart === "number"){
+        el("countdownChip").style.display = "inline-flex";
+        el("countdownText").innerText = formatMins(minsDepart);
+      } else {
+        el("countdownChip").style.display = "none";
+      }
+
+      // Leave/Arrive
       el("leaveBy").innerHTML = `${d.leaveBy} <small>(${formatMins(minsLeave)})</small>`;
       el("arriveBy").innerText = `${d.arriveBy}`;
 
-      // Updated time
-      const updatedTime = d.updatedAt ? new Date(d.updatedAt).toLocaleTimeString() : new Date().toLocaleTimeString();
-      el("updated").innerText = `Updated ${updatedTime}`;
+      // Updated time + staleness indicator
+      const updated = d.updatedAt ? new Date(d.updatedAt) : new Date();
+      const now = new Date();
+      const age = now.getTime() - updated.getTime();
 
-      // Extra meta (optional)
+      let updatedText = `Updated ${updated.toLocaleTimeString()}`;
+      if (age > STALE_MS) updatedText += " • stale";
+      el("updated").innerText = updatedText;
+
+      // Footer meta
       el("meta").innerText = "";
 
       setThemeByLeaveMins(minsLeave);
