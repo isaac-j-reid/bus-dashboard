@@ -24,21 +24,22 @@
   <div class="small" id="meta"></div>
 
   <script>
+    // IMPORTANT: paste your /exec URL here
     const ENDPOINT = "https://script.google.com/macros/s/AKfycbxK0bOe9JwfNTsfQXaq9YpMs7Oe3y8-xBQylSYL1-kwlHs48lV1VNHVcBU5r9Fo_zpDSw/exec";
+    const REFRESH_MS = 15000;
 
-    async function load() {
-      const res = await fetch(ENDPOINT, { cache: "no-store" });
-      const d = await res.json();
-
-      if (!d.ok) {
+    function render(d) {
+      if (!d || !d.ok) {
         document.getElementById("next").innerText = "No trip found";
-        document.getElementById("leave").innerText = d.message || "";
+        document.getElementById("leave").innerText = (d && d.message) ? d.message : "";
         document.getElementById("arrive").innerText = "";
+        document.getElementById("meta").innerText = "";
+        document.getElementById("b").className = "";
         return;
       }
 
       document.getElementById("next").innerText =
-        `🚌 410 departs ${d.departsAt} (${d.minsToDepart}m)`;
+        `🚌 ${d.route} departs ${d.departsAt} (${d.minsToDepart}m)`;
 
       document.getElementById("leave").innerText =
         `⏰ Leave by ${d.leaveBy} (${d.minsToLeave}m)`;
@@ -47,14 +48,29 @@
         `✅ Arrive by ${d.arriveBy}`;
 
       document.getElementById("meta").innerText =
-        `Updated ${new Date(d.updatedAt).toLocaleTimeString()}`;
+        `Updated ${new Date(d.updatedAt).toLocaleTimeString()} • ${d.note || ""}`;
 
+      // Red background when you should be leaving
       document.getElementById("b").className =
-        (d.minsToLeave <= 0) ? "danger" : "";
+        (typeof d.minsToLeave === "number" && d.minsToLeave <= 0) ? "danger" : "";
+    }
+
+    // JSONP callback
+    window.__busDashCallback = function(data) {
+      render(data);
+    };
+
+    function load() {
+      const url = `${ENDPOINT}?callback=__busDashCallback&_=${Date.now()}`;
+      const s = document.createElement("script");
+      s.src = url;
+      s.onerror = () => render({ ok: false, message: "Error loading backend (check URL / deployment access)" });
+      document.body.appendChild(s);
+      setTimeout(() => s.remove(), 5000);
     }
 
     load();
-    setInterval(load, 15000);
+    setInterval(load, REFRESH_MS);
   </script>
 </body>
 </html>
